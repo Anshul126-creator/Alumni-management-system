@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: alumni-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: makelawde
+      MYSQL_DATABASE: userdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - alumni-network
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api-gateway
+    container_name: alumni-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - alumni-network
+
+  auth-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.auth-service
+    container_name: alumni-auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/alumni_auth_db
+    networks:
+      - alumni-network
+
+volumes:
+  mysql_data:
+
+networks:
+  alumni-network:
+    driver: bridge
